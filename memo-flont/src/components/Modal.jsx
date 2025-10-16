@@ -2,7 +2,7 @@ import React from 'react';
 import './Modal.css';
 
 function Modal({ isOpen, onClose, children }) {
-  if (!isOpen) return null; // isOpenがfalseなら何も表示しない
+  if (!isOpen) return null; // isOpenがfalseなら何も表示し ない
 
   // モーダル外をクリックした際に閉じる
   const handleModalClick = (e) => {

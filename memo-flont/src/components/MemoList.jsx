@@ -7,7 +7,7 @@ function MemoList({ memos, onEdit, onDelete, onColorChange }) {
   return (
     <div className="memo-list">
       {memos.length === 0 ? (
-        <p>メモがありません。新しいメモを作成しましょう！</p>
+        <p>メモがありません。</p> 
       ) : (
         memos.map(memo => (
           <MemoItem
