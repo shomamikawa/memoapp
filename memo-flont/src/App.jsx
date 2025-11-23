@@ -13,13 +13,19 @@ function App() {
   const [editingMemo, setEditingMemo] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false); // 新しいステート
 
+  const storedUser = localStorage.getItem('authUser');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
   useEffect(() => {
-    fetchMemos();
-  }, []);
+    if (user) {
+      fetchMemos();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const fetchMemos = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/memos`);
+      const response = await axios.get(`${API_BASE_URL}/memos`, { params: { user_id: user.id } });
       setMemos(response.data);
     } catch (error) {
       console.error('メモの取得に失敗しました:', error);
@@ -27,8 +33,12 @@ function App() {
   };
 
   const handleAddMemo = async (newMemoData) => {
+    if (!user) {
+      console.error('ログインが必要です');
+      return;
+    }
     try {
-      const response = await axios.post(`${API_BASE_URL}/memos`, newMemoData);
+      const response = await axios.post(`${API_BASE_URL}/memos`, { ...newMemoData, user_id: user.id });
       setMemos([response.data, ...memos]);
     } catch (error) {
       console.error('メモの追加に失敗しました:', error);
@@ -36,11 +46,10 @@ function App() {
   };
 
   const handleUpdateMemo = async (updatedMemoData) => {
+    if (!user) return;
     try {
-      const response = await axios.put(`${API_BASE_URL}/memos/${updatedMemoData.id}`, updatedMemoData);
-      setMemos(memos.map(memo =>
-        memo.id === updatedMemoData.id ? response.data : memo
-      ));
+      const response = await axios.put(`${API_BASE_URL}/memos/${updatedMemoData.id}`, { ...updatedMemoData, user_id: user.id });
+      setMemos(memos.map(memo => (memo.id === updatedMemoData.id ? response.data : memo)));
       setEditingMemo(null);
       setIsModalOpen(false); // 更新後にモーダルを閉じる
     } catch (error) {
@@ -49,8 +58,9 @@ function App() {
   };
 
   const handleDeleteMemo = async (memoId) => {
+    if (!user) return;
     try {
-      await axios.delete(`${API_BASE_URL}/memos/${memoId}`);
+      await axios.delete(`${API_BASE_URL}/memos/${memoId}`, { params: { user_id: user.id } });
       setMemos(memos.filter(memo => memo.id !== memoId));
     } catch (error) {
       console.error('メモの削除に失敗しました:', error);
@@ -70,24 +80,26 @@ function App() {
   return (
     <div className="App">
       <h1>メモアプリ</h1>
-      {/* 常に表示される新規メモ追加フォーム */}
-      <MemoForm onSubmit={handleAddMemo} initialData={null} />
-
-      <MemoList
-        memos={memos}
-        onEdit={handleEditClick}
-        onDelete={handleDeleteMemo}
-        onColorChange={handleUpdateMemo}
-      />
-
-      {/* 編集モーダル */}
-      <Modal isOpen={isModalOpen} onClose={handleCancelEdit}>
-        <MemoForm
-          onSubmit={handleUpdateMemo}
-          initialData={editingMemo}
-          onCancel={handleCancelEdit}
-        />
-      </Modal>
+      {!user && <p>メモを表示・追加するにはログインしてください。</p>}
+      {user && (
+        <>
+          <p>ログイン中: {user.username} ({user.email})</p>
+          <MemoForm onSubmit={handleAddMemo} initialData={null} />
+          <MemoList
+            memos={memos}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteMemo}
+            onColorChange={handleUpdateMemo}
+          />
+          <Modal isOpen={isModalOpen} onClose={handleCancelEdit}>
+            <MemoForm
+              onSubmit={handleUpdateMemo}
+              initialData={editingMemo}
+              onCancel={handleCancelEdit}
+            />
+          </Modal>
+        </>
+      )}
     </div>
   );
 }
